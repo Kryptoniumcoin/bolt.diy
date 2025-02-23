@@ -2,7 +2,7 @@ import { atom, map, type MapStore, type ReadableAtom, type WritableAtom } from '
 import type { EditorDocument, ScrollPosition } from '~/components/editor/codemirror/CodeMirrorEditor';
 import { ActionRunner } from '~/lib/runtime/action-runner';
 import type { ActionCallbackData, ArtifactCallbackData } from '~/lib/runtime/message-parser';
-import type { WebContainer } from '@webcontainer/api';
+import { webcontainer } from '~/lib/webcontainer';
 import type { ITerminal } from '~/types/terminal';
 import { unreachable } from '~/utils/unreachable';
 import { EditorStore } from './editor';
@@ -37,11 +37,10 @@ type Artifacts = MapStore<Record<string, ArtifactState>>;
 export type WorkbenchViewType = 'code' | 'preview';
 
 export class WorkbenchStore {
-  #previewsStore: PreviewsStore;
-  #filesStore: FilesStore;
-  #editorStore: EditorStore;
-  #terminalStore: TerminalStore;
-  #webcontainerPromise: Promise<WebContainer>;
+  #previewsStore = new PreviewsStore(webcontainer);
+  #filesStore = new FilesStore(webcontainer);
+  #editorStore = new EditorStore(this.#filesStore);
+  #terminalStore = new TerminalStore(webcontainer);
 
   #reloadedMessages = new Set<string>();
 
@@ -55,16 +54,7 @@ export class WorkbenchStore {
   modifiedFiles = new Set<string>();
   artifactIdList: string[] = [];
   #globalExecutionQueue = Promise.resolve();
-
   constructor() {
-    this.#webcontainerPromise = Promise.resolve().then(() => {
-      throw new Error('WebContainer not initialized');
-    });
-    this.#previewsStore = new PreviewsStore(this.#webcontainerPromise);
-    this.#filesStore = new FilesStore(this.#webcontainerPromise);
-    this.#editorStore = new EditorStore(this.#filesStore);
-    this.#terminalStore = new TerminalStore(this.#webcontainerPromise);
-
     if (import.meta.hot) {
       import.meta.hot.data.artifacts = this.artifacts;
       import.meta.hot.data.unsavedFiles = this.unsavedFiles;
@@ -72,14 +62,6 @@ export class WorkbenchStore {
       import.meta.hot.data.currentView = this.currentView;
       import.meta.hot.data.actionAlert = this.actionAlert;
     }
-  }
-
-  initialize(webcontainer: WebContainer) {
-    this.#webcontainerPromise = Promise.resolve(webcontainer);
-    this.#previewsStore = new PreviewsStore(this.#webcontainerPromise);
-    this.#filesStore = new FilesStore(this.#webcontainerPromise);
-    this.#editorStore = new EditorStore(this.#filesStore);
-    this.#terminalStore = new TerminalStore(this.#webcontainerPromise);
   }
 
   addToExecutionQueue(callback: () => Promise<void>) {
@@ -287,7 +269,7 @@ export class WorkbenchStore {
       closed: false,
       type,
       runner: new ActionRunner(
-        this.#webcontainerPromise,
+        webcontainer,
         () => this.boltTerminal,
         (alert) => {
           if (this.#reloadedMessages.has(messageId)) {
@@ -349,7 +331,7 @@ export class WorkbenchStore {
     }
 
     if (data.action.type === 'file') {
-      const wc = await this.#webcontainerPromise;
+      const wc = await webcontainer;
       const fullPath = path.join(wc.workdir, data.action.filePath);
 
       if (this.selectedFile.value !== fullPath) {
@@ -571,5 +553,4 @@ export class WorkbenchStore {
   }
 }
 
-// Create and export singleton instance
 export const workbenchStore = new WorkbenchStore();

@@ -1,7 +1,6 @@
 import { WebContainer } from '@webcontainer/api';
 import { WORK_DIR_NAME } from '~/utils/constants';
 import { cleanStackTrace } from '~/utils/stacktrace';
-import { WorkbenchStore } from '~/lib/stores/workbench';
 
 interface WebContainerContext {
   loaded: boolean;
@@ -14,9 +13,6 @@ export const webcontainerContext: WebContainerContext = import.meta.hot?.data.we
 if (import.meta.hot) {
   import.meta.hot.data.webcontainerContext = webcontainerContext;
 }
-
-// Create workbench store instance
-export const workbenchStore = new WorkbenchStore();
 
 export let webcontainer: Promise<WebContainer> = new Promise(() => {
   // noop for ssr
@@ -33,14 +29,13 @@ if (!import.meta.env.SSR) {
           forwardPreviewErrors: true, // Enable error forwarding from iframes
         });
       })
-      .then(async (webcontainerInstance) => {
+      .then(async (webcontainer) => {
         webcontainerContext.loaded = true;
 
-        // Initialize workbench store with webcontainer instance
-        workbenchStore.initialize(webcontainerInstance);
+        const { workbenchStore } = await import('~/lib/stores/workbench');
 
         // Listen for preview errors
-        webcontainerInstance.on('preview-message', (message) => {
+        webcontainer.on('preview-message', (message) => {
           console.log('WebContainer preview message:', message);
 
           // Handle both uncaught exceptions and unhandled promise rejections
@@ -56,7 +51,7 @@ if (!import.meta.env.SSR) {
           }
         });
 
-        return webcontainerInstance;
+        return webcontainer;
       });
 
   if (import.meta.hot) {

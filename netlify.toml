@@ -1,20 +1,12 @@
 [build]
-  command = "remix vite:build"
-  publish = "build/client"
+  command = "pnpm run build"
+  publish = "public"
   functions = "functions"
-
-[dev]
-  command = "remix vite:dev"
-  port = 5173
-  targetPort = 5173
 
 [[redirects]]
   from = "/*"
-  to = "/index.html"
+  to = "/.netlify/functions/server"
   status = 200
 
 [functions]
-  node_bundler = "esbuild"
-
-[build.environment]
-  NODE_VERSION = "18.18.0" 
+  external_node_modules = ["@remix-run/dev"]
