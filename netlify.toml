@@ -1,0 +1,20 @@
+[build]
+  command = "remix vite:build"
+  publish = "build/client"
+  functions = "functions"
+
+[dev]
+  command = "remix vite:dev"
+  port = 5173
+  targetPort = 5173
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[functions]
+  node_bundler = "esbuild"
+
+[build.environment]
+  NODE_VERSION = "18.18.0" 
