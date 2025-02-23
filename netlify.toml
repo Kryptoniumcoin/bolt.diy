@@ -1,0 +1,12 @@
+[build]
+  command = "pnpm run build"
+  publish = "public"
+  functions = "functions"
+
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/server"
+  status = 200
+
+[functions]
+  external_node_modules = ["@remix-run/dev"]
