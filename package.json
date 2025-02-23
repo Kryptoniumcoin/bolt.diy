@@ -26,6 +26,7 @@
     "preview": "pnpm run build && pnpm run start",
     "prepare": "husky",
     "clean": "node scripts/clean.js"
+    "start": "netlify serve"
   },
   "engines": {
     "node": ">=18.18.0"
